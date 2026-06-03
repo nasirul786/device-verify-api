@@ -67,3 +67,14 @@ https://verify.arijitiyan.cc/status.php?user={telegram_id}&bot={bot_username}
   "verified_at": "2026-06-03 12:00:00"
 }
 ```
+
+## Multi-Device Detection Logic
+The system automatically tracks if a user utilizes multiple devices to perform verifications over time.
+
+### How it works:
+1. **Initial Verification**: When a user verifies for the first time, their Telegram ID is linked to their current device fingerprint.
+2. **New Device Verification**: If the same user (using the same Telegram ID) verifies on a different bot from a different physical device (producing a new fingerprint):
+   - The system detects the new fingerprint.
+   - It appends the new fingerprint to the user's `devices` list (stored as a comma-separated string).
+   - This records all devices associated with the account, allowing you to easily detect if a single user account is active across multiple distinct devices.
+
