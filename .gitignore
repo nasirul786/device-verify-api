@@ -1,0 +1,6 @@
+.env
+.system_generated/
+scratch/
+task.md
+implementation_plan.md
+walkthrough.md

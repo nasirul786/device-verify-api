@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Device Verification</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Cloudflare Turnstile Widget -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    
+    <style>
+        :root {
+            --bg-color: #fcfdfe;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --success: #16a34a;
+            --error: #dc2626;
+            --pill-bg: #f8fafc;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.03) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(37, 99, 235, 0.03) 0px, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 440px;
+            padding: 40px 24px;
+        }
+
+        .wrapper {
+            width: 100%;
+            text-align: center;
+            transition: all 0.4s ease;
+        }
+
+        .logo-area {
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(37, 99, 235, 0.08);
+            border-radius: 16px;
+        }
+
+        .logo-area svg {
+            width: 26px;
+            height: 26px;
+            fill: var(--primary);
+        }
+
+        h2 {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+
+        .info-pill {
+            background: var(--pill-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin-bottom: 28px;
+            text-align: left;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-label {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .info-value {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .captcha-container {
+            display: flex;
+            justify-content: center;
+            margin: 24px 0;
+            min-height: 65px;
+        }
+
+        .btn {
+            width: 100%;
+            background-color: var(--primary);
+            border: none;
+            border-radius: 12px;
+            padding: 14px;
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn:hover:not(:disabled) {
+            background-color: var(--primary-hover);
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* Spinner */
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Status UI states */
+        .status-container {
+            display: none;
+            padding: 20px 0;
+        }
+
+        .status-icon {
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .status-success .status-icon {
+            background: rgba(22, 163, 74, 0.1);
+        }
+
+        .status-success .status-icon svg {
+            fill: var(--success);
+            width: 28px;
+            height: 28px;
+        }
+
+        .status-error .status-icon {
+            background: rgba(220, 38, 38, 0.1);
+        }
+
+        .status-error .status-icon svg {
+            fill: var(--error);
+            width: 28px;
+            height: 28px;
+        }
+
+        .status-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+
+        .status-desc {
+            color: var(--text-muted);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            font-size: 14px;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 24px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background-color: #f1f5f9;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="wrapper" id="main-card">
+            <div id="form-content" class="fade-in">
+                <div class="logo-area">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                    </svg>
+                </div>
+                
+                <h2>Device Verification</h2>
+                <p class="subtitle">Please complete the captcha below to verify your current device.</p>
+                
+                <div class="info-pill">
+                    <div class="info-row">
+                        <span class="info-label">User ID</span>
+                        <span class="info-value" id="user-display">Loading...</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Target Bot</span>
+                        <span class="info-value" id="bot-display">Loading...</span>
+                    </div>
+                </div>
+
+                <form id="verify-form" onsubmit="handleVerify(event)">
+                    <!-- Cloudflare Turnstile Widget (Light Theme) -->
+                    <div class="captcha-container">
+                        <div class="cf-turnstile" 
+                             data-sitekey="0x4AAAAAADeALTjkJctOjduD" 
+                             data-callback="onCaptchaVerified"
+                             data-expired-callback="onCaptchaExpired"
+                             data-theme="light"></div>
+                    </div>
+
+                    <button type="submit" class="btn" id="submit-btn" disabled>
+                        <span class="spinner" id="btn-spinner"></span>
+                        <span id="btn-text">Verify Device</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Success/Error Screens -->
+            <div class="status-container" id="status-screen">
+                <!-- Content injected dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- FingerprintJS v4 -->
+    <script>
+        // Extract URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const telegramId = urlParams.get('user');
+        const botUsername = urlParams.get('bot');
+
+        // Populate display
+        document.getElementById('user-display').textContent = telegramId ? telegramId : 'Not Specified';
+        document.getElementById('bot-display').textContent = botUsername ? '@' + botUsername.replace(/^@/, '') : 'Not Specified';
+
+        // Load Fingerprint JS
+        let deviceFingerprint = null;
+        const fpPromise = import('https://openfpcdn.io/fingerprintjs/v4')
+            .then(FingerprintJS => FingerprintJS.load());
+
+        fpPromise.then(fp => fp.get()).then(result => {
+            deviceFingerprint = result.visitorId;
+        }).catch(err => {
+            console.error("Fingerprint error:", err);
+        });
+
+        // Turnstile Captcha callbacks
+        let captchaResponseToken = null;
+        function onCaptchaVerified(token) {
+            captchaResponseToken = token;
+            if (telegramId && botUsername) {
+                document.getElementById('submit-btn').removeAttribute('disabled');
+            }
+        }
+
+        function onCaptchaExpired() {
+            captchaResponseToken = null;
+            document.getElementById('submit-btn').setAttribute('disabled', 'true');
+        }
+
+        // Show error UI immediately if parameters are missing
+        if (!telegramId || !botUsername) {
+            showError("Verification Link Invalid", "Please access the verification page directly from the Telegram bot chat link.");
+        }
+
+        // Form submission
+        async function handleVerify(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submit-btn');
+            const spinner = document.getElementById('btn-spinner');
+            const btnText = document.getElementById('btn-text');
+
+            if (!telegramId || !botUsername || !captchaResponseToken) {
+                return;
+            }
+
+            if (!deviceFingerprint) {
+                try {
+                    const fp = await fpPromise;
+                    const res = await fp.get();
+                    deviceFingerprint = res.visitorId;
+                } catch (err) {
+                    showError("Identification Failed", "Could not verify your device signature. Please disable content blockers and refresh.");
+                    return;
+                }
+            }
+
+            // Show loading
+            submitBtn.setAttribute('disabled', 'true');
+            spinner.style.display = 'block';
+            btnText.textContent = 'Verifying...';
+
+            try {
+                const response = await fetch('verify.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        telegram_id: telegramId,
+                        bot: botUsername,
+                        fingerprint: deviceFingerprint,
+                        'cf-turnstile-response': captchaResponseToken
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showSuccess("Verification Successful", "Your device is verified. You can now return to the Telegram bot.");
+                } else {
+                    showError("Verification Rejected", data.error || "This device could not be verified.");
+                }
+            } catch (err) {
+                showError("Network Error", "Could not connect to the verification server. Please try again.");
+            }
+        }
+
+        function showSuccess(title, desc) {
+            const formContent = document.getElementById('form-content');
+            const statusScreen = document.getElementById('status-screen');
+            
+            formContent.style.display = 'none';
+            statusScreen.className = "status-container status-success fade-in";
+            statusScreen.style.display = 'block';
+            
+            statusScreen.innerHTML = `
+                <div class="status-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                </div>
+                <div class="status-title">${title}</div>
+                <div class="status-desc">${desc}</div>
+            `;
+        }
+
+        function showError(title, desc) {
+            const formContent = document.getElementById('form-content');
+            const statusScreen = document.getElementById('status-screen');
+            
+            formContent.style.display = 'none';
+            statusScreen.className = "status-container status-error fade-in";
+            statusScreen.style.display = 'block';
+            
+            statusScreen.innerHTML = `
+                <div class="status-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                    </svg>
+                </div>
+                <div class="status-title">${title}</div>
+                <div class="status-desc">${desc}</div>
+                ${!telegramId || !botUsername ? '' : '<button onclick="location.reload()" class="btn-secondary">Try Again</button>'}
+            `;
+        }
+    </script>
+</body>
+</html>
