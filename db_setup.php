@@ -28,6 +28,18 @@ try {
     $pdo->exec($verificationsTable);
     echo "Table 'verifications' created or already exists.\n";
     
+    // Create webhooks table
+    $webhooksTable = "CREATE TABLE IF NOT EXISTS `webhooks` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `telegram_id` VARCHAR(255) NOT NULL,
+        `bot` VARCHAR(255) NOT NULL,
+        `url` TEXT NOT NULL,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY `tg_bot_webhook` (`telegram_id`, `bot`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+    $pdo->exec($webhooksTable);
+    echo "Table 'webhooks' created or already exists.\n";
+    
     echo "Database setup completed successfully!\n";
 } catch (PDOException $e) {
     echo "Error setting up database: " . $e->getMessage() . "\n";

@@ -11,6 +11,8 @@
     
     <!-- Cloudflare Turnstile Widget -->
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
     <style>
         :root {
@@ -296,8 +298,16 @@
     <script>
         // Extract URL params
         const urlParams = new URLSearchParams(window.location.search);
-        const telegramId = urlParams.get('user');
         const botUsername = urlParams.get('bot');
+
+        // Automatically detect user ID from Telegram WebApp context, falling back to URL parameter
+        let telegramId = null;
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
+            telegramId = window.Telegram.WebApp.initDataUnsafe.user.id;
+        }
+        if (!telegramId) {
+            telegramId = urlParams.get('user');
+        }
 
         // Populate display
         document.getElementById('user-display').textContent = telegramId ? telegramId : 'Not Specified';

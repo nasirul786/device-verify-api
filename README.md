@@ -78,3 +78,36 @@ The system automatically tracks if a user utilizes multiple devices to perform v
    - It appends the new fingerprint to the user's `devices` list (stored as a comma-separated string).
    - This records all devices associated with the account, allowing you to easily detect if a single user account is active across multiple distinct devices.
 
+
+## Webhook Integration
+
+You can register a webhook callback URL for a user on a specific bot. When verification succeeds or is rejected, the server will POST the verification result to that webhook.
+
+### 1. Register Webhook
+Send a `POST` request to `webhook_register.php` with the user, bot, and webhook URL.
+
+- **Endpoint**: `https://verify.arijitiyan.cc/webhook_register.php`
+- **Payload (JSON or Form Data)**:
+```json
+{
+  "user": "123456789",
+  "bot": "my_telegram_bot",
+  "webhook": "https://yourdomain.com/callback"
+}
+```
+
+### 2. Webhook Dispatch Payload
+When verification is executed, the server dispatches a `POST` request containing:
+```json
+{
+  "telegram_id": "123456789",
+  "bot": "my_telegram_bot",
+  "status": "success",          // Or "rejected"
+  "fingerprint": "c5e93df14a79bb9557682db1415df8a1",
+  "devices": ["c5e93df14a79bb9557682db1415df8a1"],
+  "error": null,                 // Reason if rejected
+  "timestamp": "2026-06-03T12:00:00+00:00"
+}
+```
+
+

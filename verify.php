@@ -13,6 +13,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once __DIR__ . '/db.php';
 
+function triggerWebhook($pdo, $telegramId, $bot, $status, $fingerprint, $devices, $errorMsg = null) {
+    try {
+        $stmt = $pdo->prepare("SELECT url FROM webhooks WHERE telegram_id = :telegram_id AND bot = :bot LIMIT 1");
+        $stmt->execute(['telegram_id' => $telegramId, 'bot' => $bot]);
+        $row = $stmt->fetch();
+        if ($row && !empty($row['url'])) {
+            $url = $row['url'];
+            $payload = json_encode([
+                'telegram_id' => $telegramId,
+                'bot' => $bot,
+                'status' => $status,
+                'fingerprint' => $fingerprint,
+                'devices' => $devices,
+                'error' => $errorMsg,
+                'timestamp' => date('c')
+            ]);
+            
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 3); // short timeout so it doesn't block the client
+            curl_exec($ch);
+        }
+    } catch (Exception $e) {
+        // Silent catch to prevent breaking core verification flow
+    }
+}
+
 // Retrieve post data
 $input = json_decode(file_get_contents('php://input'), true);
 if (!$input) {
@@ -148,9 +181,11 @@ try {
     if ($isDuplicate) {
         // Verification rejects (but user's telegram_id is saved & devices connected, which we already did!)
         $pdo->commit();
+        $errorMsg = 'Verification rejected: This device is already associated with another account (' . $duplicateTelegramId . ') verified on this bot.';
+        triggerWebhook($pdo, $telegramId, $bot, 'rejected', $fingerprint, $userDevices, $errorMsg);
         echo json_encode([
             'success' => false,
-            'error' => 'Verification rejected: This device is already associated with another account (' . $duplicateTelegramId . ') verified on this bot.'
+            'error' => $errorMsg
         ]);
         exit;
     }
@@ -165,6 +200,8 @@ try {
     }
 
     $pdo->commit();
+
+    triggerWebhook($pdo, $telegramId, $bot, 'success', $fingerprint, $userDevices);
 
     echo json_encode([
         'success' => true,
